@@ -6,6 +6,9 @@
   <meta name="description" content="한문과 수학을 매일 가볍게 익히는 아이 전용 학습 사이트">
   <title>학습부</title>
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .subject-card[hidden] { display: none !important; }
+  </style>
 </head>
 <body>
   <main class="page-shell">
@@ -20,7 +23,8 @@
 
     <section class="subjects" aria-labelledby="subjects-title">
       <h2 id="subjects-title" class="sr-only">과목 선택</h2>
-      <a class="subject-card hanja" href="hanja-quiz/">
+      <!-- Temporarily hidden on the home page only; remove hidden to show this card again. -->
+      <a class="subject-card hanja" href="hanja-quiz/" hidden>
         <span class="subject-icon" aria-hidden="true">漢</span>
         <span class="subject-copy">
           <span class="subject-label">한문</span>
