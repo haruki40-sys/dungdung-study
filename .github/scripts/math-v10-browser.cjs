@@ -2,7 +2,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
-const URL=process.env.MATH_URL||'https://haruki40-sys.github.io/dungdung-study/math-quiz/?v=10.0';
+const URL=process.env.MATH_URL||'https://haruki40-sys.github.io/dungdung-study/math-quiz/?v=10.1';
 (async()=>{
  const browser=await chromium.launch({headless:true});
  let routes=0,answers=0;const errors=[];
@@ -11,7 +11,10 @@ const URL=process.env.MATH_URL||'https://haruki40-sys.github.io/dungdung-study/m
   p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));
   await p.clock.install({time:new Date(when)});await p.clock.pauseAt(new Date(when));
   const response=await p.goto(URL,{waitUntil:'networkidle'});assert.equal(response.status(),200);
-  await p.locator('.homecard').first().waitFor();return p;
+  await p.locator('.homecard').first().waitFor();
+  assert.equal(await p.evaluate(()=>BdmBank.combinationCount),592);
+  assert.deepEqual(await p.evaluate(()=>{const bank=DailyMath.make(DailyMath.dateKey());return [bank.length,bank.filter(q=>q.source==='v10').length,bank.filter(q=>q.source==='bdm').length];}),[60,30,30]);
+  return p;
  }
  async function close(p){await p.context().close();}
  async function go(p,hash){

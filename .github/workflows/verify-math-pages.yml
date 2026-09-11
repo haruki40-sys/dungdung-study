@@ -1,7 +1,7 @@
-name: Verify math Pages
+name: Verify math v10.1
 on:
   push:
-    branches: [main]
+    branches: [main, math-bdm-50-50]
     paths:
       - 'math-quiz/**'
       - '.github/scripts/math-v10-*.cjs'
@@ -10,17 +10,49 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: verify-math-pages
+  group: verify-math-pages-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  public-url-check:
+  source-check:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Verify published entry and exact tested assets
+      - name: Verify entry and JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'math-release:10.1' math-quiz/index.html
+          for file in v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js; do
+            node --check "math-quiz/$file"
+          done
+      - name: Verify 366 daily sets, 592 BDM combinations and geometry
+        run: node .github/scripts/math-v10-content.cjs math-quiz
+      - name: Install pinned browser test dependency
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/math-browser" playwright@1.57.0 --no-fund --no-audit
+          "$RUNNER_TEMP/math-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify browser navigation, storage, midnight and scroll
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          for attempt in $(seq 1 20); do curl --silent --fail http://127.0.0.1:4173/math-quiz/ >/dev/null && break; sleep 1; done
+          MATH_URL='http://127.0.0.1:4173/math-quiz/?v=10.1' NODE_PATH="$RUNNER_TEMP/math-browser/node_modules" node .github/scripts/math-v10-browser.cjs
+
+  public-url-check:
+    if: github.ref == 'refs/heads/main'
+    needs: source-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify published entry and exact commit assets
         env:
           BASE: https://haruki40-sys.github.io/dungdung-study
         shell: bash
@@ -30,51 +62,34 @@ jobs:
           cd "$RUNNER_TEMP/math-published"
           ok=0
           for attempt in $(seq 1 30); do
-            code=$(curl --location --silent --show-error --max-time 20 --output index.html --write-out '%{http_code}' "$BASE/math-quiz/?v=10.0&check=$GITHUB_RUN_ID" || true)
+            code=$(curl --location --silent --show-error --max-time 20 --output index.html --write-out '%{http_code}' "$BASE/math-quiz/?v=10.1&check=$GITHUB_RUN_ID" || true)
             echo "Attempt $attempt: math page HTTP $code"
-            if [ "$code" = 200 ] && grep -q 'math-release:10.0' index.html; then
+            if [ "$code" = 200 ] && grep -q 'math-release:10.1' index.html; then
               ok=1
               break
             fi
             sleep 10
           done
           [ "$ok" = 1 ]
-          for file in v9-bank.js v10-daily.js v10-figures.js v10-app.js v10-style.css; do
+          for file in index.html v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js v10-style.css; do
             curl --location --silent --show-error --fail --retry 3 --max-time 25 "$BASE/math-quiz/$file?check=$GITHUB_RUN_ID" -o "$file"
-            echo "$file HTTP 200"
-            case "$file" in *.js) node --check "$file";; esac
+            actual=$(git hash-object "$file")
+            expected=$(git -C "$GITHUB_WORKSPACE" rev-parse "HEAD:math-quiz/$file")
+            [ "$actual" = "$expected" ]
+            echo "PASS exact published asset: $file"
           done
-          node <<'JS'
-          const fs=require('fs'),crypto=require('crypto');
-          const expected={
-            'index.html':'1244aec74a043bd51f03cef13ee12c911700c70e',
-            'v9-bank.js':'844c22751589a97be0fb2f951beed831ce338dfc',
-            'v10-daily.js':'1cdc39affb405c35662192524c270a3f62fe5dac',
-            'v10-figures.js':'a1afad23c34211a79865682a1edfc3117a253f64',
-            'v10-app.js':'e33e70f889e63c99af84a790130d9edbbbe486f9',
-            'v10-style.css':'f57e25e6916b8fb76620423fe81431e84e3a9d0a'
-          };
-          for(const [file,sha] of Object.entries(expected)){
-            const b=fs.readFileSync(file);
-            const actual=crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+b.length+'\0'),b])).digest('hex');
-            if(actual!==sha)throw Error('Published asset mismatch: '+file);
-            console.log('PASS exact tested asset:',file);
-          }
-          JS
           for path in '' 'hanja-quiz/'; do
             code=$(curl --location --silent --show-error --max-time 25 -o /dev/null --write-out '%{http_code}' "$BASE/$path?check=$GITHUB_RUN_ID")
             echo "Existing page $path HTTP $code"
             [ "$code" = 200 ]
           done
-      - name: Verify 366 daily sets, numerical answers and matching geometry
-        run: node .github/scripts/math-v10-content.cjs "$RUNNER_TEMP/math-published"
       - name: Install pinned browser test dependency
         shell: bash
         run: |
           npm install --prefix "$RUNNER_TEMP/math-browser" playwright@1.57.0 --no-fund --no-audit
           "$RUNNER_TEMP/math-browser/node_modules/.bin/playwright" install --with-deps chromium
-      - name: Verify actual browser navigation, saved answers and Korean midnight
+      - name: Verify deployed browser behavior
         env:
-          MATH_URL: https://haruki40-sys.github.io/dungdung-study/math-quiz/?v=10.0
+          MATH_URL: https://haruki40-sys.github.io/dungdung-study/math-quiz/?v=10.1
         shell: bash
         run: NODE_PATH="$RUNNER_TEMP/math-browser/node_modules" node .github/scripts/math-v10-browser.cjs
