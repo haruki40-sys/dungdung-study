@@ -31,4 +31,14 @@
   submit:({name})=>syncAll(name),
   syncAll
  };
+ let lastName='';
+ function syncNamedLearner(){
+  const name=normalizeName(read()?.activeName);
+  if(!name||name===lastName)return;
+  lastName=name;
+  setTimeout(()=>syncAll(name).catch(e=>console.warn('Initial leaderboard sync failed',e)),250);
+ }
+ window.addEventListener('pageshow',syncNamedLearner);
+ setInterval(syncNamedLearner,1000);
+ syncNamedLearner();
 })();
