@@ -26,7 +26,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -q 'math-release:10.1' math-quiz/index.html
-          for file in v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js leaderboard-remote-v1.js leaderboard-v1.js; do
+          for file in v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js leaderboard-remote-v1.js leaderboard-v1.js notation-v1.js; do
             node --check "math-quiz/$file"
           done
       - name: Verify 366 daily sets, 592 BDM combinations and geometry
@@ -71,7 +71,7 @@ jobs:
             sleep 10
           done
           [ "$ok" = 1 ]
-          for file in index.html v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js leaderboard-remote-v1.js leaderboard-v1.js v10-style.css; do
+          for file in index.html v9-bank.js v10-daily.js bdm-bank-v1.js v10.1-hybrid.js v10-figures.js bdm-figures-v1.js v10-app.js leaderboard-remote-v1.js leaderboard-v1.js notation-v1.js notation-v1.css v10-style.css v11-clean.css; do
             curl --location --silent --show-error --fail --retry 3 --max-time 25 "$BASE/math-quiz/$file?check=$GITHUB_RUN_ID" -o "$file"
             actual=$(git hash-object "$file")
             expected=$(git -C "$GITHUB_WORKSPACE" rev-parse "HEAD:math-quiz/$file")
