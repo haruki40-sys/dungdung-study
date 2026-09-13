@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="v11-clean.css">
 <link rel="stylesheet" href="notation-v1.css">
 <link rel="stylesheet" href="data-manager-v1.css">
-<link rel="stylesheet" href="admin-v2.css">
+<link rel="stylesheet" href="reset-ui-v1.css">
 <script defer src="v9-bank.js"></script>
 <script defer src="v10-daily.js"></script>
 <script defer src="bdm-bank-v1.js"></script>
@@ -21,10 +21,12 @@
 <script defer src="v10-app.js"></script>
 <script defer src="notation-v3.js"></script>
 <script defer src="data-manager-v1.js"></script>
+<script defer src="reset-ui-v1.js"></script>
 </head>
 <body data-view="home"><div class="wrap">
-<header class="masthead"><div class="brand" aria-label="수학 학습"><span class="brandmark" aria-hidden="true">수</span><span><span id="admin-trigger" class="admin-trigger" role="button" tabindex="0" aria-label="관리자 확인">학습부</span> <span class="brand-divider">/</span> <a href="#/">수학</a></span></div><span id="edition" class="edition"></span></header>
+<header class="masthead"><a class="brand" href="#/" aria-label="수학 학습 홈"><span class="brandmark" aria-hidden="true">수</span><span>학습부 <span class="brand-divider">/</span> 수학</span></a><span id="edition" class="edition"></span></header>
 <p class="notice">※ 출제된 문제 중 잘못된 것이 있을 수도 있습니다.</p>
+<div class="reset-row"><button class="reset-trigger" id="reset-study-data" type="button">초기화</button></div>
 <div class="navrow"><button class="back" id="back-button" type="button" hidden><span aria-hidden="true">←</span> 뒤로가기</button><nav id="crumb" aria-label="현재 위치"></nav></div>
 <p class="storage-note" id="storage-note" hidden>현재 브라우저에서는 저장할 수 없습니다. 창을 닫으면 기록이 남지 않을 수 있습니다.</p>
 <main id="app"><p class="loading">학습 화면을 불러오는 중입니다.</p></main>
