@@ -2,6 +2,8 @@
 'use strict';
 (()=>{
  const originalMake=DailyMath.make;
+ const CLOCK_RE=/(시계|시침|분침|초침|몇\s*시|clock)/i;
+ const isClock=q=>CLOCK_RE.test([q?.q,q?.e,q?.type].filter(Boolean).join(' '));
  function make(date=DailyMath.dateKey(),offset=0){
   const original=originalMake(date,offset),bdm=BdmBank.make(date,offset);
   const virtual=Math.floor(Date.parse(date+'T00:00:00Z')/86400000)+offset;
@@ -22,10 +24,15 @@
   const usedUnits=new Set(),picked=[];
   for(let i=0;i<levels.length;i++){
    const score=q=>DailyMath.hash(date+'|'+offset+'|daily5|'+i+'|'+q.id+'|'+q.source);
-   let candidates=full.filter(q=>q.level===levels[i]&&q.source===sources[i]&&!usedUnits.has(q.unit));
-   if(!candidates.length)candidates=full.filter(q=>q.level===levels[i]&&q.source===sources[i]);
-   candidates.sort((a,b)=>score(a)-score(b)||a.id.localeCompare(b.id));
-   const q=candidates[0];if(!q)throw Error('Unable to build daily five');
+   const base=q=>q.level===levels[i]&&q.source===sources[i]&&!isClock(q);
+   let candidates=full.filter(q=>base(q)&&!usedUnits.has(q.unit));
+   if(!candidates.length)candidates=full.filter(base);
+   candidates.sort((a,b)=>{
+    const figureDiff=Number(Boolean(b.fig))-Number(Boolean(a.fig));
+    if(figureDiff)return figureDiff;
+    return score(a)-score(b)||a.id.localeCompare(b.id);
+   });
+   const q=candidates[0];if(!q)throw Error('Unable to build daily five without clock questions');
    usedUnits.add(q.unit);picked.push(q);
   }
   if(picked.length!==5||new Set(picked.map(q=>q.uid)).size!==5)throw Error('Invalid daily five');
